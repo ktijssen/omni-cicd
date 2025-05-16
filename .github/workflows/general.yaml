@@ -1,0 +1,90 @@
+name: OmniCTL - general
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "general/**"
+  pull_request:
+    paths:
+      - "general/**"
+  workflow_dispatch:
+
+jobs:
+  omnictl:
+    name: Apply General-config to Omni
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install yq
+        run: |
+          curl -sSL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o yq
+          chmod +x yq
+          sudo mv yq /usr/local/bin/
+
+      - name: Install omnictl
+        run: |
+          curl -sSL https://github.com/siderolabs/omni/releases/latest/download/omnictl-linux-amd64 -o omnictl
+          chmod +x omnictl
+          sudo mv omnictl /usr/local/bin/
+
+      - name: Validate & Generate General Configuration
+        id: validate
+        run: |
+          yq e '.' general/*.yaml > .tmp_omni_general.yaml
+
+      - name: Plan General Configuration
+        id: plan
+        if: |
+          github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        env:
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+        run: |
+          {
+            echo 'PLAN<<EOF'
+            omnictl apply -f .tmp_omni_general.yaml --dry-run
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+        continue-on-error: true
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.PLAN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### OmniCTL Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### OmniCTL Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`bash\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Apply Cluster Configuration
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+        run: |
+          omnictl apply -f .tmp_omni_general.yaml

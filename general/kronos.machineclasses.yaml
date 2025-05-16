@@ -1,0 +1,8 @@
+metadata:
+  type: MachineClasses.omni.sidero.dev
+  id: kronos
+  namespace: default
+spec:
+  matchlabels:
+    - hostname-prefix = kronos, managedby = terraform
+

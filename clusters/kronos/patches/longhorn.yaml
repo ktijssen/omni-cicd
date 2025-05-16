@@ -1,0 +1,14 @@
+machine:
+  disks:
+    - device: "/dev/sda"
+      partitions:
+        - mountpoint: "/var/lib/longhorn"
+  kubelet:
+    extraMounts:
+      - destination: /var/lib/longhorn
+        type: bind
+        source: /var/lib/longhorn
+        options:
+          - bind
+          - rshared
+          - rw

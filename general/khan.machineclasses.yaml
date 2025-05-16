@@ -1,0 +1,7 @@
+metadata:
+  type: MachineClasses.omni.sidero.dev
+  id: khan
+  namespace: default
+spec:
+  matchlabels:
+    - hostname-prefix = khan, managedby = terraform

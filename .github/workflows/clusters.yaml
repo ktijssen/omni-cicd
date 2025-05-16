@@ -1,0 +1,83 @@
+name: OmniCTL - Clusters
+
+on:
+  workflow_call:
+    inputs:
+      folderName:
+        required: true
+        type: string
+
+jobs:
+  cluster:
+    name: Apply Cluster-config to Omni
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install omnictl
+        run: |
+          curl -sSL https://github.com/siderolabs/omni/releases/latest/download/omnictl-linux-amd64 -o omnictl
+          chmod +x omnictl
+          sudo mv omnictl /usr/local/bin/
+
+      - name: Validate Cluster Configuration
+        id: validate
+        env:
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+        run: |
+          omnictl cluster template validate -f clusters/${{ inputs.folderName }}/cluster.yaml
+
+      - name: Plan Cluster Configuration
+        id: plan
+        if: |
+          github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        env:
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+        run: |
+          {
+            echo 'PLAN<<EOF'
+            omnictl cluster template diff -f clusters/${{ inputs.folderName }}/cluster.yaml | sed 's;.*/dev/null;;' | tr -s '\n'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+        continue-on-error: true
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.PLAN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### OmniCTL Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### OmniCTL Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`diff\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Apply Cluster Configuration
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ secrets.OMNI_SERVICE_ACCOUNT_KEY }}
+          OMNI_ENDPOINT: ${{ secrets.OMNI_ENDPOINT }}
+        run: |
+          omnictl cluster template sync -f clusters/${{ inputs.folderName }}/cluster.yaml

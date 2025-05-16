@@ -1,0 +1,33 @@
+kind: Cluster
+name: kronos
+kubernetes:
+  version: v1.32.4
+talos:
+  version: v1.9.5
+systemExtensions:
+  - siderolabs/iscsi-tools
+  - siderolabs/qemu-guest-agent
+  - siderolabs/util-linux-tools
+patches:
+  - name: install-disk
+    file: clusters/kronos/patches/install-disk.yaml
+  - name: kubelet
+    file: clusters/kronos/patches/kubelet.yaml
+  - name: longhorn-storage
+    file: clusters/kronos/patches/longhorn.yaml
+---
+kind: ControlPlane
+machineClass:
+  name: kronos
+  size: 3
+patches:
+  - name: allow-cp-scheduling
+    file: clusters/kronos/patches/allowcpscheduling.yaml
+  - name: api-admissioncontroller
+    file: clusters/kronos/patches/api-admissioncontroller.yaml
+  - name: extra-manifests
+    file: clusters/kronos/patches/extramanifests.yaml
+  - name: additional-metrics
+    file: clusters/kronos/patches/metrics.yaml
+  - name: cni-kube-proxy
+    file: clusters/kronos/patches/networking.yaml

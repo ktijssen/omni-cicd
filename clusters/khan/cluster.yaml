@@ -1,0 +1,33 @@
+kind: Cluster
+name: khan
+kubernetes:
+  version: v1.32.4
+talos:
+  version: v1.9.6
+systemExtensions:
+  - siderolabs/iscsi-tools
+  - siderolabs/qemu-guest-agent
+  - siderolabs/util-linux-tools
+patches:
+  - name: install-disk
+    file: clusters/khan/patches/install-disk.yaml
+  - name: kubelet
+    file: clusters/khan/patches/kubelet.yaml
+  - name: longhorn-storage
+    file: clusters/khan/patches/longhorn.yaml
+---
+kind: ControlPlane
+machineClass:
+  name: khan
+  size: 3
+patches:
+  - name: allow-cp-scheduling
+    file: clusters/khan/patches/allowcpscheduling.yaml
+  - name: api-admissioncontroller
+    file: clusters/khan/patches/api-admissioncontroller.yaml
+  - name: extra-manifests
+    file: clusters/khan/patches/extramanifests.yaml
+  - name: additional-metrics
+    file: clusters/khan/patches/metrics.yaml
+  - name: cni-kube-proxy
+    file: clusters/khan/patches/networking.yaml

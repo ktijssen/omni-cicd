@@ -1,0 +1,25 @@
+name: Run OmniCTL (Kronos)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "clusters/kronos/**"
+  pull_request:
+    paths:
+      - "clusters/kronos/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  runOmnictl:
+    name: Run OmniCTL
+    uses: ./.github/workflows/clusters.yaml
+    secrets: inherit
+    with:
+      folderName: kronos
