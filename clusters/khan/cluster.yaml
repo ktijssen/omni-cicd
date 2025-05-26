@@ -1,9 +1,9 @@
 kind: Cluster
 name: khan
 kubernetes:
-  version: v1.32.4
+  version: v1.32.5
 talos:
-  version: v1.9.6
+  version: v1.10.2
 systemExtensions:
   - siderolabs/iscsi-tools
   - siderolabs/qemu-guest-agent
