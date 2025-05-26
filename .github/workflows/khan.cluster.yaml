@@ -1,0 +1,25 @@
+name: Run OmniCTL (Khan)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "clusters/khan/**"
+  pull_request:
+    paths:
+      - "clusters/khan/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  runOmnictl:
+    name: Run OmniCTL
+    uses: ./.github/workflows/clusters.yaml
+    secrets: inherit
+    with:
+      folderName: khan
