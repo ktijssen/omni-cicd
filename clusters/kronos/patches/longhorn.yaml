@@ -15,4 +15,4 @@ name: longhorn
 provisioning:
   diskSelector:
     match: disk.transport == 'virtio' && !system_disk
-  minSize: 10GB
+  minSize: 10GiB
