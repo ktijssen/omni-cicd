@@ -7,3 +7,4 @@ cluster:
             namespaces:
               - actions-runner-system
               - alloy
+              - longhorn-system
