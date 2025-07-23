@@ -14,5 +14,5 @@ kind: UserVolumeConfig
 name: longhorn
 provisioning:
   diskSelector:
-    match: "!system_disk"
+    match: disk.transport == 'virtio' && !system_disk
   minSize: 10GB
